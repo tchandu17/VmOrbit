@@ -1,9 +1,15 @@
 import api from "./client";
-import type { ApiResponse, PaginatedResponse, PageParams, User, Permission } from "@/types";
+import type { ApiResponse, PageParams, User, Permission } from "@/types";
 
 export const userApi = {
   list: (params?: PageParams) =>
-    api.get<ApiResponse<PaginatedResponse<User>>>("/v1/users", { params }).then((r) => r.data.data),
+    api.get<ApiResponse<User[]>>("/v1/users", { params }).then((r) => ({
+      data: r.data.data ?? [],
+      total: r.data.meta?.total_items ?? 0,
+      page: r.data.meta?.page ?? 1,
+      page_size: r.data.meta?.page_size ?? 20,
+      total_pages: r.data.meta?.total_pages ?? 0,
+    })),
 
   get: (id: string) =>
     api.get<ApiResponse<User>>(`/v1/users/${id}`).then((r) => r.data.data),
