@@ -23,6 +23,7 @@ const PROVIDERS: { value: ProviderType; label: string; defaultPort: number }[] =
   { value: "vmware",  label: "VMware vCenter", defaultPort: 443  },
   { value: "esxi",    label: "VMware ESXi",    defaultPort: 443  },
   { value: "proxmox", label: "Proxmox VE",     defaultPort: 8006 },
+  { value: "nutanix", label: "Nutanix AHV",    defaultPort: 9440 },
   { value: "kvm",     label: "KVM / QEMU",     defaultPort: 22   },
   { value: "hyperv",  label: "Hyper-V",        defaultPort: 5985 },
 ];
@@ -31,6 +32,7 @@ const PROVIDER_LABELS: Record<ProviderType, string> = {
   vmware:  "VMware vCenter",
   esxi:    "VMware ESXi",
   proxmox: "Proxmox VE",
+  nutanix: "Nutanix AHV",
   kvm:     "KVM / QEMU",
   hyperv:  "Hyper-V",
 };
