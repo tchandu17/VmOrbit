@@ -25,6 +25,14 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
       -o /build/bin/vmorbit \
       ./cmd/server
 
+# Build the seed tool
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build \
+      -ldflags="-s -w" \
+      -trimpath \
+      -o /build/bin/vmorbit-seed \
+      ./cmd/seed
+
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 FROM alpine:3.20 AS production
 
@@ -33,6 +41,7 @@ RUN apk add --no-cache ca-certificates tzdata wget
 
 # Copy the statically-linked binary
 COPY --from=builder /build/bin/vmorbit /vmorbit
+COPY --from=builder /build/bin/vmorbit-seed /vmorbit-seed
 
 # Copy default config (overridden by env vars in production)
 COPY --from=builder /build/configs/config.yaml /configs/config.yaml
