@@ -25,10 +25,8 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
     depends_on:
       backend:
@@ -91,7 +89,7 @@ services:
       dockerfile: Dockerfile.frontend
       target: production
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://vmorbit.example.com}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://vmorbit.example.com}
     image: vmorbit/frontend:${APP_VERSION:-latest}
     container_name: vmorbit_frontend
     restart: unless-stopped
