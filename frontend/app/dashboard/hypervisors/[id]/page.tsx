@@ -22,7 +22,7 @@ import { wsClient } from "@/lib/ws/WSClient";
 import { cn, relativeTime, formatDate, formatBytes } from "@/lib/utils";
 import { taskApi } from "@/lib/api/tasks";
 import { infrastructureApi } from "@/lib/api/infrastructure";
-import type { Hypervisor, VM, UpdateHypervisorPayload, ProviderType, Task, Host, Cluster, DataStore } from "@/types";
+import type { Hypervisor, VM, UpdateHypervisorPayload, ProviderType, Task, Host, Cluster, DataStore, Network as NetworkType } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -443,7 +443,7 @@ function HardwareTab({ hypervisorId }: { hypervisorId: string }) {
         {networks.length > 0 && (
           <HwSectionCard title={`Networks (${networks.length})`} icon={Network}>
             <div className="space-y-2">
-              {networks.map((net: Network) => (
+              {networks.map((net: NetworkType) => (
                 <div key={net.id} className="flex items-center gap-3 p-2.5 bg-gray-800/50 rounded-lg">
                   <Network className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   <div className="flex-1 min-w-0">
