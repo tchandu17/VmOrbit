@@ -1,0 +1,213 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Service Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0 }] } }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Backend Status",
+      "targets": [{ "expr": "up{job=\"vmorbit-backend\"}", "legendFormat": "" }],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Uptime",
+      "targets": [{ "expr": "time() - process_start_time_seconds{job=\"vmorbit-backend\"}", "legendFormat": "" }],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Request Rate",
+      "targets": [{ "expr": "sum(rate(vmorbit_http_requests_total[5m]))", "legendFormat": "" }],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] } } },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Error Rate (5xx)",
+      "targets": [{ "expr": "sum(rate(vmorbit_http_requests_total{status=~\"5..\"}[5m])) / sum(rate(vmorbit_http_requests_total[5m]))", "legendFormat": "" }],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Active Connections (WS)",
+      "targets": [{ "expr": "vmorbit_websocket_connections_active", "legendFormat": "" }],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Active Workers",
+      "targets": [{ "expr": "vmorbit_tasks_workers_active", "legendFormat": "" }],
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "API Performance",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 10,
+      "options": { "legend": { "displayMode": "table" }, "tooltip": { "mode": "multi" } },
+      "title": "Request Latency (p50, p95, p99)",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(vmorbit_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(vmorbit_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(vmorbit_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 11,
+      "title": "Requests by Status Code",
+      "targets": [
+        { "expr": "sum(rate(vmorbit_http_requests_total{status=~\"2..\"}[5m]))", "legendFormat": "2xx" },
+        { "expr": "sum(rate(vmorbit_http_requests_total{status=~\"4..\"}[5m]))", "legendFormat": "4xx" },
+        { "expr": "sum(rate(vmorbit_http_requests_total{status=~\"5..\"}[5m]))", "legendFormat": "5xx" }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "Task Engine",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 20,
+      "title": "Task Queue Depth",
+      "targets": [{ "expr": "vmorbit_tasks_queue_depth", "legendFormat": "priority-{{priority}}" }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 21,
+      "title": "Task Duration by Type",
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(vmorbit_tasks_duration_seconds_bucket[5m])) by (le, type))", "legendFormat": "{{type}}" }],
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 103,
+      "title": "Providers",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "id": 30,
+      "title": "Provider Operation Latency (p95)",
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(vmorbit_provider_operation_duration_seconds_bucket[5m])) by (le, provider))", "legendFormat": "{{provider}}" }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "id": 31,
+      "title": "Provider Health Status",
+      "targets": [{ "expr": "vmorbit_provider_health_status", "legendFormat": "{{provider}} ({{hypervisor_id}})" }],
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
+      "id": 104,
+      "title": "Infrastructure",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "decmbytes" } },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 33 },
+      "id": 40,
+      "title": "Heap Memory",
+      "targets": [{ "expr": "go_memstats_heap_alloc_bytes{job=\"vmorbit-backend\"} / 1024 / 1024", "legendFormat": "heap" }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 33 },
+      "id": 41,
+      "title": "Goroutines",
+      "targets": [{ "expr": "go_goroutines{job=\"vmorbit-backend\"}", "legendFormat": "goroutines" }],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 33 },
+      "id": 42,
+      "title": "DB Connections",
+      "targets": [
+        { "expr": "vmorbit_database_connections_open", "legendFormat": "open" },
+        { "expr": "vmorbit_database_connections_idle", "legendFormat": "idle" }
+      ],
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["vmorbit", "production"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" },
+        "hide": 0,
+        "includeAll": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "VMOrbit — Production Overview",
+  "uid": "vmorbit-overview",
+  "version": 1
+}

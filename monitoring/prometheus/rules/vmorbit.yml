@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VMOrbit — Prometheus Alert Rules
+# ─────────────────────────────────────────────────────────────────────────────
+
+groups:
+  - name: vmorbit.service
+    rules:
+      - alert: VMOrbitBackendDown
+        expr: up{job="vmorbit-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "VMOrbit backend is down"
+          description: "The VMOrbit backend has been unreachable for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(vmorbit_http_requests_total{status=~"5.."}[5m]) / rate(vmorbit_http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate (>5%)"
+          description: "More than 5% of requests are returning 5xx errors."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(vmorbit_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency (p95 > 2s)"
+          description: "95th percentile request latency exceeds 2 seconds."
+
+  - name: vmorbit.tasks
+    rules:
+      - alert: TaskQueueBacklog
+        expr: sum(vmorbit_tasks_queue_depth) > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Task queue backlog exceeds 500"
+          description: "Tasks are accumulating faster than workers can process them."
+
+      - alert: TaskFailureRate
+        expr: rate(vmorbit_tasks_total{status="failed"}[15m]) / rate(vmorbit_tasks_total[15m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High task failure rate (>10%)"
+          description: "More than 10% of tasks are failing."
+
+  - name: vmorbit.providers
+    rules:
+      - alert: ProviderUnhealthy
+        expr: vmorbit_provider_health_status == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Provider {{ $labels.provider }} is unhealthy"
+          description: "Provider {{ $labels.provider }} (hypervisor {{ $labels.hypervisor_id }}) has been unhealthy for 5 minutes."
+
+      - alert: ProviderHighLatency
+        expr: histogram_quantile(0.95, rate(vmorbit_provider_operation_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Provider operations are slow (p95 > 30s)"
+          description: "Provider {{ $labels.provider }} operations are taking longer than 30 seconds."
+
+  - name: vmorbit.infrastructure
+    rules:
+      - alert: HighMemoryUsage
+        expr: go_memstats_heap_alloc_bytes / 1024 / 1024 > 400
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High heap memory usage (>400MB)"
+          description: "Backend heap memory usage exceeds 400MB."
+
+      - alert: HighGoroutineCount
+        expr: go_goroutines > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High goroutine count (>1000)"
+          description: "Possible goroutine leak detected."
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: vmorbit_database_connections_open / 50 > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool nearly exhausted (>90%)"
+          description: "Database connection pool is at {{ $value | humanizePercentage }} capacity."

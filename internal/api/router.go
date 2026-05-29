@@ -11,6 +11,7 @@ import (
 	"github.com/vmOrbit/backend/internal/api/handler"
 	"github.com/vmOrbit/backend/internal/api/middleware"
 	"github.com/vmOrbit/backend/internal/config"
+	"github.com/vmOrbit/backend/internal/metrics"
 	"github.com/vmOrbit/backend/internal/service"
 	"github.com/vmOrbit/backend/internal/task"
 	"github.com/vmOrbit/backend/internal/websocket"
@@ -38,6 +39,7 @@ func NewRouter(deps RouterDeps) http.Handler {
 
 	// ── Global middleware ────────────────────────────────────────────────────
 	r.Use(middleware.RequestID())
+	r.Use(metrics.Middleware())
 	r.Use(middleware.Logger(deps.Log))
 	r.Use(middleware.Recovery(deps.Log))
 	r.Use(middleware.CORS(deps.Config.Server.CORSOrigins))

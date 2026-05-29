@@ -1,7 +1,8 @@
 .PHONY: build run test lint migrate docker-up docker-down tidy swag \
         build-prod deploy deploy-rollback backup restore \
         docker-prod-up docker-prod-down docker-prod-logs \
-        gen-secrets health-check
+        docker-monitoring-up docker-monitoring-down \
+        gen-secrets health-check validate-env
 
 APP_NAME   = vmorbit
 BUILD_DIR  = ./bin
@@ -95,3 +96,15 @@ health-check:
 	@echo "=== Liveness ===" && curl -sf http://localhost/health | python3 -m json.tool
 	@echo "=== Readiness ===" && curl -sf http://localhost/ready | python3 -m json.tool
 	@echo "=== Status ===" && curl -sf http://localhost/status | python3 -m json.tool
+
+## validate-env: Validate production environment before deployment
+validate-env:
+	./scripts/validate-env.sh
+
+## docker-monitoring-up: Start monitoring stack (Prometheus + Grafana)
+docker-monitoring-up:
+	docker compose -f docker-compose.production.yml -f docker-compose.monitoring.yml --env-file .env.production up -d
+
+## docker-monitoring-down: Stop monitoring stack
+docker-monitoring-down:
+	docker compose -f docker-compose.monitoring.yml down

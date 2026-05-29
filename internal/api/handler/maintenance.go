@@ -108,10 +108,14 @@ func NewMaintenanceHandler(state *MaintenanceState) *MaintenanceHandler {
 
 // GetStatus returns the current maintenance mode status.
 func (h *MaintenanceHandler) GetStatus(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+	var since *time.Time
+	if h.state.IsActive() {
+		since = &h.state.activeSince
+	}
+	ok(c, gin.H{
 		"maintenance": h.state.IsActive(),
 		"reason":      h.state.Reason(),
-		"since":       h.state.activeSince,
+		"since":       since,
 	})
 }
 
@@ -127,10 +131,10 @@ func (h *MaintenanceHandler) Enable(c *gin.Context) {
 		req.Reason = "Maintenance in progress"
 	}
 	h.state.Enable(req.Reason)
-	c.JSON(http.StatusOK, gin.H{
+	ok(c, gin.H{
 		"maintenance": true,
 		"reason":      req.Reason,
-		"message":     "Maintenance mode enabled",
+		"since":       h.state.activeSince,
 	})
 }
 
@@ -138,8 +142,9 @@ func (h *MaintenanceHandler) Enable(c *gin.Context) {
 // POST /api/v1/system/maintenance/disable
 func (h *MaintenanceHandler) Disable(c *gin.Context) {
 	h.state.Disable()
-	c.JSON(http.StatusOK, gin.H{
+	ok(c, gin.H{
 		"maintenance": false,
-		"message":     "Maintenance mode disabled",
+		"reason":      "",
+		"since":       nil,
 	})
 }

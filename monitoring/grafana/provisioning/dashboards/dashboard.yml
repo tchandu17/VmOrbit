@@ -1,0 +1,16 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VMOrbit — Grafana Dashboard Provisioning
+# ─────────────────────────────────────────────────────────────────────────────
+
+apiVersion: 1
+
+providers:
+  - name: "VMOrbit"
+    orgId: 1
+    folder: "VMOrbit"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
