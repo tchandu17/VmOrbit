@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Force dynamic rendering so env vars are read at request time
+// Force dynamic rendering — never cache this route
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
-// In Docker: frontend reaches backend via Docker service name.
-// In local dev: override with BACKEND_INTERNAL_URL=http://localhost:8080
-function getBackendUrl() {
-  return process.env.BACKEND_INTERNAL_URL || "http://backend:8080";
-}
+// Backend URL: in Docker this is always "backend:8080" (Docker service name).
+// For local development without Docker, set BACKEND_INTERNAL_URL=http://localhost:8080
+const BACKEND_URL = "http://backend:8080";
 
 async function handler(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  const url = `${getBackendUrl()}/${path.join("/")}${req.nextUrl.search}`;
+  const backendBase = process.env.BACKEND_INTERNAL_URL ?? BACKEND_URL;
+  const url = `${backendBase}/${path.join("/")}${req.nextUrl.search}`;
 
   const headers: Record<string, string> = {};
 
@@ -30,8 +30,10 @@ async function handler(req: NextRequest, { params }: { params: Promise<{ path: s
       method: req.method,
       headers,
       body,
+      cache: "no-store",
     });
   } catch (err) {
+    console.error("[proxy] Backend fetch failed:", url, err);
     return new NextResponse(
       JSON.stringify({ success: false, error: "Backend unreachable" }),
       { status: 502, headers: { "Content-Type": "application/json" } }
