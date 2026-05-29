@@ -26,11 +26,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
       ./cmd/server
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
-FROM scratch AS production
+FROM alpine:3.20 AS production
 
-# Import CA certificates and timezone data from builder
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+# Install wget for health checks and CA certificates
+RUN apk add --no-cache ca-certificates tzdata wget
 
 # Copy the statically-linked binary
 COPY --from=builder /build/bin/vmorbit /vmorbit
@@ -38,8 +37,9 @@ COPY --from=builder /build/bin/vmorbit /vmorbit
 # Copy default config (overridden by env vars in production)
 COPY --from=builder /build/configs/config.yaml /configs/config.yaml
 
-# Non-root user (numeric UID for scratch images)
-USER 65534:65534
+# Non-root user
+RUN adduser -D -u 65534 appuser
+USER appuser
 
 EXPOSE 8080
 
