@@ -4,11 +4,15 @@ import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { TaskDrawer } from "@/components/tasks/TaskDrawer";
+import { CommandPalette } from "@/components/layout/CommandPalette";
+import { HelpPanel } from "@/components/layout/HelpPanel";
+import { OnboardingWizard } from "@/components/layout/OnboardingWizard";
 import { useAuthStore } from "@/store/useAuthStore";
 import { wsClient } from "@/lib/ws/WSClient";
 import { useTaskStore } from "@/store/useTaskStore";
 import { taskApi } from "@/lib/api/tasks";
 import { authApi } from "@/lib/api/auth";
+import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts";
 import type { Task } from "@/types";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +20,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false);
   const { hydrate: hydrateAuth, accessToken, isAuthenticated, setUser } = useAuthStore();
   const { upsertPartial, hydrate: hydrateStore } = useTaskStore();
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts();
 
   // Step 1: hydrate auth from localStorage on client only
   useEffect(() => {
@@ -101,6 +108,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
       <TaskDrawer />
+      <CommandPalette />
+      <HelpPanel />
+      <OnboardingWizard />
     </div>
   );
 }

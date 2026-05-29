@@ -170,8 +170,8 @@ function OverviewTab({ hypervisor, vmCount }: { hypervisor: Hypervisor; vmCount:
       {/* VMware-specific */}
       {isVMware && (
         <SectionCard title="VMware Details" icon={Server}>
-          {meta.vcenter_url && <InfoRow label="vCenter URL"  value={String(meta.vcenter_url)} mono />}
-          {meta.datacenter  && <InfoRow label="Datacenter"   value={String(meta.datacenter)} />}
+          {!!meta.vcenter_url && <InfoRow label="vCenter URL"  value={String(meta.vcenter_url)} mono />}
+          {!!meta.datacenter  && <InfoRow label="Datacenter"   value={String(meta.datacenter)} />}
           <InfoRow label="Provider Type" value={hypervisor.provider === "esxi" ? "Standalone ESXi" : "vCenter"} />
         </SectionCard>
       )}
@@ -179,8 +179,8 @@ function OverviewTab({ hypervisor, vmCount }: { hypervisor: Hypervisor; vmCount:
       {/* Proxmox-specific */}
       {isProxmox && (
         <SectionCard title="Proxmox Details" icon={Server}>
-          {meta.node         && <InfoRow label="Node"         value={String(meta.node)} />}
-          {meta.api_token_id && <InfoRow label="API Token ID" value={String(meta.api_token_id)} mono />}
+          {!!meta.node         && <InfoRow label="Node"         value={String(meta.node)} />}
+          {!!meta.api_token_id && <InfoRow label="API Token ID" value={String(meta.api_token_id)} mono />}
         </SectionCard>
       )}
 

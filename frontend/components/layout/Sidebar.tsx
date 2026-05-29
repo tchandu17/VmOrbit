@@ -1,72 +1,53 @@
 "use client";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Server, Cpu, Activity, FileText, Settings, Users, LayoutDashboard, Shield, HeartPulse, Bell, Zap, Clock, GitBranch, Copy, PackagePlus, Layers, BarChart3, TrendingUp, Lightbulb, MessageSquare, AlertOctagon, MonitorDot, Globe, Database, ShieldCheck, Network } from "lucide-react";
+import { Server, ChevronDown, Star, Search, Clock } from "lucide-react";
 import { useUIStore } from "@/store/useUIStore";
 import { usePermissions } from "@/store/usePermissions";
-import { Permissions } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ElementType;
-  exact?: boolean;
-  permission?: string;
-  section?: string;
-}
-
-const navItems: NavItem[] = [
-  { label: "Overview",         href: "/dashboard",                icon: LayoutDashboard, exact: true },
-  { label: "Virtual Machines", href: "/dashboard/vms",            icon: Server,          permission: Permissions.VM_READ },
-  { label: "Infrastructure",   href: "/dashboard/infrastructure",  icon: Network,         permission: Permissions.HYPERVISOR_READ },
-  { label: "Environments",     href: "/dashboard/environments",   icon: Layers,          permission: Permissions.VM_READ },
-  { label: "Templates",        href: "/dashboard/templates",      icon: Copy,            permission: Permissions.VM_READ },
-  { label: "Provisioning",     href: "/dashboard/provisioning",   icon: PackagePlus,     permission: Permissions.VM_READ },
-  { label: "Hypervisors",      href: "/dashboard/hypervisors",    icon: Cpu,             permission: Permissions.HYPERVISOR_READ },
-  { label: "Provider Health",  href: "/dashboard/health",         icon: HeartPulse,      permission: Permissions.HYPERVISOR_READ },
-  { label: "Analytics",        href: "/dashboard/analytics",      icon: BarChart3,       permission: Permissions.HYPERVISOR_READ },
-  { label: "Capacity",         href: "/dashboard/analytics/capacity",       icon: TrendingUp,  permission: Permissions.HYPERVISOR_READ },
-  { label: "Optimization",     href: "/dashboard/analytics/recommendations", icon: Lightbulb,  permission: Permissions.HYPERVISOR_READ },
-  { label: "Forecasting",      href: "/dashboard/analytics/forecasting",    icon: TrendingUp,  permission: Permissions.HYPERVISOR_READ },
-  { label: "Tasks",            href: "/dashboard/tasks",          icon: Activity,        permission: Permissions.TASK_READ },
-  { label: "Schedules",        href: "/dashboard/schedules",      icon: Clock,           permission: Permissions.TASK_READ },
-  { label: "Automation",       href: "/dashboard/automation",     icon: GitBranch,       permission: Permissions.TASK_READ },
-  { label: "Governance",       href: "/dashboard/governance",     icon: Shield,          permission: Permissions.POLICY_READ },
-  { label: "Policies",         href: "/dashboard/governance/policies",   icon: Shield,         permission: Permissions.POLICY_READ },
-  { label: "Approvals",        href: "/dashboard/governance/approvals",  icon: MessageSquare,  permission: Permissions.APPROVAL_READ },
-  { label: "Violations",       href: "/dashboard/governance/violations", icon: AlertOctagon,   permission: Permissions.POLICY_READ },
-  { label: "Event Activity",   href: "/dashboard/events",         icon: Zap,             permission: Permissions.AUDIT_READ },
-  { label: "Notifications",    href: "/dashboard/notifications",  icon: Bell,            permission: Permissions.AUDIT_READ },
-  { label: "Audit Log",        href: "/dashboard/audit",          icon: FileText,        permission: Permissions.AUDIT_READ },
-  { label: "Users",            href: "/dashboard/users",          icon: Users,           permission: Permissions.USER_READ },
-  { label: "Roles",            href: "/dashboard/roles",          icon: Shield,          permission: Permissions.ROLE_READ },
-  // ── Operations ──────────────────────────────────────────────────────────────
-  { label: "System Health",    href: "/dashboard/system",         icon: MonitorDot,      permission: Permissions.HYPERVISOR_READ },
-  { label: "Platform Status",  href: "/dashboard/status",         icon: Globe,           permission: Permissions.HYPERVISOR_READ },
-  { label: "Backup Status",    href: "/dashboard/backups",        icon: Database,        permission: Permissions.HYPERVISOR_READ },
-  { label: "Administration",   href: "/dashboard/admin",          icon: ShieldCheck,     permission: Permissions.HYPERVISOR_READ },
-  { label: "Settings",         href: "/dashboard/settings",       icon: Settings },
-];
+import { navigationGroups, getAllNavItems, type NavItem } from "@/lib/navigation";
 
 export function Sidebar() {
   const pathname = usePathname();
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+  const collapsedGroups = useUIStore((s) => s.collapsedGroups);
+  const toggleGroup = useUIStore((s) => s.toggleGroup);
+  const favorites = useUIStore((s) => s.favorites);
+  const recentPages = useUIStore((s) => s.recentPages);
+  const addRecentPage = useUIStore((s) => s.addRecentPage);
+  const openCommandPalette = useUIStore((s) => s.openCommandPalette);
   const { can } = usePermissions();
 
-  const visibleItems = navItems.filter((item) =>
-    !item.permission || can(item.permission)
-  );
+  // Track page visits
+  useEffect(() => {
+    if (pathname) addRecentPage(pathname);
+  }, [pathname]);
+
+  const allItems = getAllNavItems();
+  const favoriteItems = allItems.filter((item) => favorites.includes(item.href));
+  const recentItems = recentPages
+    .slice(0, 5)
+    .map((href) => allItems.find((item) => item.href === href))
+    .filter(Boolean) as (NavItem & { group: string })[];
+
+  function isActive(item: NavItem) {
+    return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/");
+  }
+
+  function canView(item: NavItem) {
+    return !item.permission || can(item.permission);
+  }
 
   return (
     <aside
       className={cn(
         "flex flex-col bg-gray-900 border-r border-gray-800 transition-all duration-200 shrink-0",
-        sidebarOpen ? "w-56" : "w-16"
+        sidebarOpen ? "w-60" : "w-16"
       )}
     >
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-800">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-800">
         <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
           <Server className="w-4 h-4 text-white" />
         </div>
@@ -75,24 +56,110 @@ export function Sidebar() {
         )}
       </div>
 
+      {/* Quick Search Button */}
+      {sidebarOpen && (
+        <div className="px-3 pt-3 pb-1">
+          <button
+            onClick={openCommandPalette}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800/50 border border-gray-700/50 text-gray-500 text-xs hover:bg-gray-800 hover:text-gray-400 transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Search...</span>
+            <kbd className="ml-auto text-[10px] bg-gray-700/50 px-1.5 py-0.5 rounded text-gray-500">⌘K</kbd>
+          </button>
+        </div>
+      )}
+
       {/* Nav */}
-      <nav className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto sidebar-scroll">
-        {visibleItems.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+      <nav className="flex-1 py-2 px-2 overflow-y-auto sidebar-scroll">
+        {/* Favorites Section */}
+        {sidebarOpen && favoriteItems.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              <Star className="w-3 h-3" />
+              <span>Favorites</span>
+            </div>
+            {favoriteItems.map((item) => (
+              <NavLink key={`fav-${item.id}`} item={item} active={isActive(item)} sidebarOpen={sidebarOpen} />
+            ))}
+          </div>
+        )}
+
+        {/* Recent Pages */}
+        {sidebarOpen && recentItems.length > 0 && !favoriteItems.length && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              <Clock className="w-3 h-3" />
+              <span>Recent</span>
+            </div>
+            {recentItems.slice(0, 3).map((item) => (
+              <NavLink key={`recent-${item.id}`} item={item} active={isActive(item)} sidebarOpen={sidebarOpen} />
+            ))}
+          </div>
+        )}
+
+        {/* Navigation Groups */}
+        {navigationGroups.map((group) => {
+          const visibleItems = group.items.filter(canView);
+          if (visibleItems.length === 0) return null;
+
+          const isCollapsed = collapsedGroups[group.id];
+          const hasActiveItem = visibleItems.some(isActive);
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                active
-                  ? "bg-blue-600/20 text-blue-400"
-                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+            <div key={group.id} className="mb-1">
+              {/* Group Header */}
+              {sidebarOpen ? (
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-colors",
+                    hasActiveItem ? "text-blue-400" : "text-gray-500 hover:text-gray-300"
+                  )}
+                >
+                  <group.icon className="w-3 h-3" />
+                  <span>{group.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      "w-3 h-3 ml-auto transition-transform duration-200",
+                      isCollapsed && "-rotate-90"
+                    )}
+                  />
+                </button>
+              ) : (
+                <div className="flex justify-center py-2">
+                  <div className="w-6 h-px bg-gray-800" />
+                </div>
               )}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {sidebarOpen && <span>{item.label}</span>}
-            </Link>
+
+              {/* Group Items */}
+              {!isCollapsed && (
+                <div className={cn("space-y-0.5", sidebarOpen && "ml-1")}>
+                  {visibleItems.map((item) => (
+                    <NavLink
+                      key={item.id}
+                      item={item}
+                      active={isActive(item)}
+                      sidebarOpen={sidebarOpen}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Collapsed: show only icons */}
+              {isCollapsed && !sidebarOpen && (
+                <div className="space-y-0.5">
+                  {visibleItems.map((item) => (
+                    <NavLink
+                      key={item.id}
+                      item={item}
+                      active={isActive(item)}
+                      sidebarOpen={false}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
@@ -104,5 +171,56 @@ export function Sidebar() {
         </div>
       )}
     </aside>
+  );
+}
+
+function NavLink({
+  item,
+  active,
+  sidebarOpen,
+}: {
+  item: NavItem;
+  active: boolean;
+  sidebarOpen: boolean;
+}) {
+  const addFavorite = useUIStore((s) => s.addFavorite);
+  const removeFavorite = useUIStore((s) => s.removeFavorite);
+  const favorites = useUIStore((s) => s.favorites);
+  const isFavorite = favorites.includes(item.href);
+
+  return (
+    <div className="group relative">
+      <Link
+        href={item.href}
+        className={cn(
+          "flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+          active
+            ? "bg-blue-600/15 text-blue-400 border border-blue-500/20"
+            : "text-gray-400 hover:text-white hover:bg-gray-800/70 border border-transparent"
+        )}
+        title={!sidebarOpen ? item.label : undefined}
+      >
+        <item.icon className="w-4 h-4 shrink-0" />
+        {sidebarOpen && <span className="truncate">{item.label}</span>}
+      </Link>
+
+      {/* Favorite toggle on hover */}
+      {sidebarOpen && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            isFavorite ? removeFavorite(item.href) : addFavorite(item.href);
+          }}
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-opacity",
+            isFavorite
+              ? "opacity-100 text-yellow-400"
+              : "opacity-0 group-hover:opacity-100 text-gray-600 hover:text-yellow-400"
+          )}
+        >
+          <Star className={cn("w-3 h-3", isFavorite && "fill-current")} />
+        </button>
+      )}
+    </div>
   );
 }
