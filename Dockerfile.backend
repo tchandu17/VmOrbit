@@ -37,9 +37,8 @@ COPY --from=builder /build/bin/vmorbit /vmorbit
 # Copy default config (overridden by env vars in production)
 COPY --from=builder /build/configs/config.yaml /configs/config.yaml
 
-# Non-root user
-RUN adduser -D -u 65534 appuser
-USER appuser
+# Non-root user (use existing 'nobody' user in Alpine)
+USER nobody
 
 EXPOSE 8080
 
