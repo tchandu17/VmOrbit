@@ -21,4 +21,5 @@ export interface PaginatedResponse<T> {
 export interface PageParams {
   page?: number;
   page_size?: number;
+  [key: string]: string | number | boolean | undefined;
 }
