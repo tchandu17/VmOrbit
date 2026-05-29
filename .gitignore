@@ -1,0 +1,43 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test output
+*.test
+*.out
+coverage.html
+coverage.out
+
+# Config with secrets (use config.yaml.example instead)
+configs/config.local.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Swagger generated docs (keep docs/ folder, only ignore generated swagger)
+# docs/swagger/
+
+# Air live-reload
+tmp/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env*
+
+# Kiro
+.kiro/
+
+# Environment files
+.env
+.env.*
+!.env.production.example

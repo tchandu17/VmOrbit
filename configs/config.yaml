@@ -1,0 +1,72 @@
+server:
+  port: 8080
+  mode: debug
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  cors_origins:
+    - "http://localhost:3001"
+    - "http://localhost:5173"
+
+database:
+  host: 127.0.0.1
+  port: 5432
+  user: vmorbit
+  password: vmorbit_secret
+  dbname: vmorbit
+  sslmode: disable
+  max_open_conns: 50        # increased for production load
+  max_idle_conns: 15
+  conn_max_lifetime: 5m
+
+redis:
+  host: 127.0.0.1
+  port: 6380
+  password: ""
+  db: 1
+  pool_size: 20             # increased to handle concurrent workers + health checks
+
+jwt:
+  secret: "change-me-in-production-use-a-long-random-string"
+  access_token_ttl: 8h
+  refresh_token_ttl: 168h
+  issuer: vmOrbit
+
+providers:
+  vmware:
+    enabled: true
+    default_timeout: 30s
+    max_concurrent_conns: 3  # enforced by per-provider semaphore in task engine
+  proxmox:
+    enabled: true
+    default_timeout: 30s
+    verify_tls: false
+
+task_engine:
+  worker_count: 10
+  queue_size: 1000
+  max_retries: 3
+  retry_base_delay: 5s
+  task_ttl: 24h
+  poll_interval: 5s          # DB fallback poller — crash recovery only, not hot path
+  lock_ttl: 300s
+  max_log_entries: 500
+  default_timeout: 10m
+
+log:
+  level: debug
+  format: console
+
+metrics:
+  enabled: true
+  path: /metrics
+
+# Rate limiting thresholds (enforced in middleware/ratelimit.go)
+# These are documented here for visibility — values are currently hardcoded
+# in the middleware constructors. Move to config struct if runtime tuning needed.
+#
+# rate_limits:
+#   global_rpm: 6000          # 100 req/s across all clients
+#   ip_rpm: 300               # 5 req/s per IP
+#   user_rpm: 600             # 10 req/s per authenticated user
+#   provider_ops_rpm: 5       # sync/test ops per hypervisor per minute

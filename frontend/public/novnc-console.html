@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VM Console</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0a0a0a; color: #e5e5e5; font-family: ui-monospace, monospace; overflow: hidden; }
+    #log {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      padding: 16px; font-size: 12px; line-height: 1.6;
+      overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
+    .ok   { color: #22c55e; }
+    .err  { color: #ef4444; }
+    .inf  { color: #60a5fa; }
+    .warn { color: #f59e0b; }
+    #console-container { position: fixed; inset: 0; display: none; background: #000; }
+    #wmks-container    { position: fixed; inset: 0; display: none; background: #000; }
+  </style>
+</head>
+<body>
+  <div id="log"></div>
+  <div id="console-container"></div>
+  <div id="wmks-container"></div>
+
+  <script>
+    var logEl = document.getElementById("log");
+    function log(msg, cls) {
+      var line = document.createElement("div");
+      line.className = cls || "";
+      line.textContent = "[" + new Date().toISOString().slice(11,23) + "] " + msg;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    var params   = new URLSearchParams(location.search);
+    var wsUrl    = params.get("ws");
+    var consType = params.get("type") || "novnc";
+
+    log("Console type: " + consType, "inf");
+    log("WS URL: " + (wsUrl || "(none)"), wsUrl ? "inf" : "err");
+
+    if (!wsUrl) {
+      log("ERROR: No WebSocket URL in ?ws= param", "err");
+    } else if (consType === "webmks") {
+      launchWebMKS(wsUrl);
+    } else {
+      launchNoVNC(wsUrl, ["binary"]);
+    }
+
+    // ── WebMKS (VMware standalone ESXi) ──────────────────────────────────────
+    // Strategy:
+    //  1. Try loading the WMKS SDK from the ESXi host (ESXi 6.5+)
+    //  2. If SDK not available, fall back to noVNC (works for MKS on port 902)
+    function launchWebMKS(wsUrl) {
+      log("Connecting to VMware WebMKS...", "inf");
+
+      var match = wsUrl.match(/^wss?:\/\/([^/:]+)/);
+      var esxiHost = match ? match[1] : null;
+
+      if (!esxiHost) {
+        log("ERROR: Cannot extract ESXi host from WS URL", "err");
+        return;
+      }
+
+      log("ESXi host: " + esxiHost, "inf");
+
+      // Determine if this is port 902 (plain ws, MKS) or port 443 (wss, host client)
+      var portMatch = wsUrl.match(/^wss?:\/\/[^/:]+:(\d+)/);
+      var wsPort = portMatch ? parseInt(portMatch[1]) : (wsUrl.startsWith("wss://") ? 443 : 80);
+      log("Port: " + wsPort + " | Scheme: " + (wsUrl.startsWith("wss://") ? "wss" : "ws"), "inf");
+
+      if (wsPort === 902 || wsUrl.startsWith("ws://")) {
+        // Port 902 = plain MKS WebSocket. The WMKS SDK is not needed here —
+        // noVNC's RFB protocol works directly with ESXi MKS on port 902.
+        log("MKS port 902 detected — using noVNC RFB client", "inf");
+        launchNoVNC(wsUrl, ["binary"]);
+        return;
+      }
+
+      // Port 443 — try loading the WMKS SDK from the ESXi host client
+      log("Loading WebMKS SDK from ESXi host...", "inf");
+      tryLoadWMKS(esxiHost, wsUrl, [
+        "/ui/dist/wmks/wmks.min.js",
+        "/ui/wmks/wmks.min.js",
+        "/ui/dist/wmks.min.js",
+      ], 0);
+    }
+
+    function tryLoadWMKS(esxiHost, wsUrl, paths, idx) {
+      if (idx >= paths.length) {
+        log("WebMKS SDK not available on this ESXi host — falling back to noVNC", "warn");
+        launchNoVNC(wsUrl, ["vmware-wmks", "vmware-wmks+deflate", "binary"]);
+        return;
+      }
+      var sdkUrl = "https://" + esxiHost + paths[idx];
+      log("Trying SDK: " + sdkUrl, "inf");
+      var script = document.createElement("script");
+      script.src = sdkUrl;
+      script.onload = function() {
+        log("WebMKS SDK loaded — connecting...", "ok");
+        startWMKS(wsUrl);
+      };
+      script.onerror = function() {
+        tryLoadWMKS(esxiHost, wsUrl, paths, idx + 1);
+      };
+      document.head.appendChild(script);
+    }
+
+    function startWMKS(wsUrl) {
+      var container = document.getElementById("wmks-container");
+      container.style.display = "block";
+      document.getElementById("log").style.display = "none";
+      try {
+        var wmks = WMKS.createWMKS("wmks-container", {
+          useVNCHandshake: false,
+          rescale: true,
+          changeResolution: true,
+        });
+        wmks.register(WMKS.CONST.Events.CONNECTION_STATE_CHANGE, function(event, data) {
+          if (data.state === WMKS.CONST.ConnectionState.CONNECTED) {
+            log("WebMKS connected", "ok");
+          } else if (data.state === WMKS.CONST.ConnectionState.DISCONNECTED) {
+            container.style.display = "none";
+            document.getElementById("log").style.display = "block";
+            log("WebMKS disconnected: " + (data.reason || "session ended"), "warn");
+          }
+        });
+        wmks.connect(wsUrl);
+      } catch (e) {
+        container.style.display = "none";
+        document.getElementById("log").style.display = "block";
+        log("WebMKS SDK error: " + e.message + " — falling back to noVNC", "warn");
+        launchNoVNC(wsUrl, ["vmware-wmks", "vmware-wmks+deflate", "binary"]);
+      }
+    }
+
+    // ── noVNC (Proxmox + ESXi MKS port 902) ──────────────────────────────────
+    function launchNoVNC(wsUrl, protocols) {
+      log("Connecting via noVNC (protocols: " + protocols.join(", ") + ")...", "inf");
+
+      // Test connectivity first so we get a clear error if it fails
+      var serverMsg = "";
+      var testWs = new WebSocket(wsUrl, protocols);
+
+      testWs.onmessage = function(e) {
+        if (typeof e.data === "string") serverMsg = e.data;
+      };
+
+      testWs.onopen = function() {
+        log("WebSocket connected — launching noVNC...", "ok");
+        testWs.close(1000);
+        startNoVNC(wsUrl, protocols);
+      };
+
+      testWs.onerror = function() { /* detail in onclose */ };
+
+      testWs.onclose = function(e) {
+        if (e.code === 1000) return;
+        var reason = e.reason || serverMsg || "";
+        if (e.code === 1006) {
+          if (reason) {
+            log("Error: " + reason, "err");
+          } else {
+            log("Connection failed (code=1006).", "err");
+            log("Possible causes:", "warn");
+            log("  • WebMKS ticket expired (tickets are valid ~30s — open console quickly)", "warn");
+            log("  • ESXi firewall blocking port " + (wsUrl.match(/:(\d+)\//) || ["","?"])[1], "warn");
+            log("  • Browser blocked mixed content (ws:// from https:// page)", "warn");
+            log("Use the external link button above to open the console directly in ESXi.", "warn");
+          }
+        } else if (e.code === 1011) {
+          log("Server error: " + (reason || "upstream unreachable"), "err");
+        } else {
+          log("WebSocket closed: code=" + e.code + (reason ? " — " + reason : ""), "err");
+        }
+      };
+    }
+
+    function startNoVNC(wsUrl, protocols) {
+      var script = document.createElement("script");
+      script.type = "module";
+      // Build the script as a string to avoid template literal issues
+      var lines = [
+        'import RFB from "https://cdn.jsdelivr.net/npm/@novnc/novnc@1.4.0/core/rfb.js";',
+        'var container = document.getElementById("console-container");',
+        'container.style.display = "block";',
+        'document.getElementById("log").style.display = "none";',
+        'try {',
+        '  var rfb = new RFB(container, ' + JSON.stringify(wsUrl) + ', { wsProtocols: ' + JSON.stringify(protocols) + ' });',
+        '  rfb.scaleViewport = true;',
+        '  rfb.resizeSession = true;',
+        '  rfb.addEventListener("connect", function() {',
+        '    document.title = "Console — Connected";',
+        '  });',
+        '  rfb.addEventListener("disconnect", function(e) {',
+        '    container.style.display = "none";',
+        '    document.getElementById("log").style.display = "block";',
+        '    var logEl = document.getElementById("log");',
+        '    var line = document.createElement("div");',
+        '    var clean = e.detail && e.detail.clean;',
+        '    line.className = clean ? "warn" : "err";',
+        '    line.textContent = clean ? "Session ended cleanly." : "Connection lost: " + (e.detail && e.detail.reason || "unknown");',
+        '    logEl.appendChild(line);',
+        '  });',
+        '} catch(err) {',
+        '  container.style.display = "none";',
+        '  document.getElementById("log").style.display = "block";',
+        '  var logEl = document.getElementById("log");',
+        '  var line = document.createElement("div");',
+        '  line.className = "err";',
+        '  line.textContent = "noVNC error: " + err.message;',
+        '  logEl.appendChild(line);',
+        '}',
+      ];
+      script.textContent = lines.join("\n");
+      document.head.appendChild(script);
+    }
+  </script>
+</body>
+</html>

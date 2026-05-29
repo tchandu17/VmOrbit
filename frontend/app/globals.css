@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  /* ─── Global scrollbar — dark theme with blue accent ─── */
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #0f172a; /* slate-700 thumb / slate-900 track */
+  }
+
+  /* Webkit: Chrome, Edge, Safari */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0f172a; /* slate-900 — matches bg-gray-950 */
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #334155; /* slate-700 */
+    border-radius: 9999px;
+    border: 1px solid #0f172a; /* thin gap between thumb and track */
+    transition: background-color 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #3b82f6; /* blue-500 — brand accent on hover */
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: #2563eb; /* blue-600 — pressed state */
+  }
+
+  /* Corner where horizontal + vertical scrollbars meet */
+  ::-webkit-scrollbar-corner {
+    background: #0f172a;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+
+  /* Thin scrollbar for sidebar nav — invisible until hover */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s;
+  }
+
+  .sidebar-scroll:hover {
+    scrollbar-color: #334155 transparent;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) */
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+  }
+
+  .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+    background-color: #334155; /* slate-700 */
+  }
+
+  .sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
+    background-color: #3b82f6; /* blue-500 */
+  }
+}

@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VMOrbit Backend — Multi-stage Dockerfile
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM golang:1.22-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+WORKDIR /build
+
+# Cache dependency downloads separately from source compilation
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# Copy source
+COPY . .
+
+# Build with optimizations: strip debug info, disable CGO for static binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build \
+      -ldflags="-s -w -X main.version=${VERSION:-dev} -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      -trimpath \
+      -o /build/bin/vmorbit \
+      ./cmd/server
+
+# ── Stage 2: Production image ─────────────────────────────────────────────────
+FROM scratch AS production
+
+# Import CA certificates and timezone data from builder
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+# Copy the statically-linked binary
+COPY --from=builder /build/bin/vmorbit /vmorbit
+
+# Copy default config (overridden by env vars in production)
+COPY --from=builder /build/configs/config.yaml /configs/config.yaml
+
+# Non-root user (numeric UID for scratch images)
+USER 65534:65534
+
+EXPOSE 8080
+
+ENTRYPOINT ["/vmorbit"]

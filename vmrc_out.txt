@@ -1,0 +1,8 @@
+[1] Plain TCP connect to 192.168.20.100:902
+[2] Banner (plain TCP): 220 VMware Authentication Daemon Version 1.10: SSL Required, ServerDaemonProtocol:SOAP, MKSDisplayProtocol:VNC , VMXARGS supported, NFCSSL supported/t
+[3] Upgrading to TLS (SSL Required)...
+    TLS OK
+[4] USER resp: 331 Password required for 521ef9fb-0a4c-101e-f295-18885c0db066.
+[5] PASS resp: 230 User 521ef9fb-0a4c-101e-f295-18885c0db066 logged in.
+[6] Sending: "CONNECT 521ef9fb-0a4c-101e-f295-18885c0db066 mks\r\n"
+    CONNECT (ticket) resp: "501 Command 'CONNECT521ef9fb-0a4c-101e-f295-18885c0db066' not authorized for specified VM" err=<nil>
