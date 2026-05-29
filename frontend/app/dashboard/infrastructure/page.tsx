@@ -226,7 +226,7 @@ function ClusterDetail({ node }: { node: InfraTreeNode }) {
         <StatCard label="VMs" value={node.vm_count} icon={Cpu} color="text-blue-400" />
       </div>
 
-      {(meta.total_cpu || meta.total_memory_mb) && (
+      {(meta.total_cpu || meta.total_memory_mb) ? (
         <div className="bg-gray-800/50 rounded-xl p-4 space-y-2">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Resources</h3>
           {meta.total_cpu ? <InfoRow label="Total CPU" value={`${meta.total_cpu} cores`} /> : null}
@@ -234,7 +234,7 @@ function ClusterDetail({ node }: { node: InfraTreeNode }) {
             <InfoRow label="Total Memory" value={formatMB(meta.total_memory_mb as number)} />
           ) : null}
         </div>
-      )}
+      ) : null}
 
       {/* Host list */}
       {(node.children ?? []).length > 0 && (
