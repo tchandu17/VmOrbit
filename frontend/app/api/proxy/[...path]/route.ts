@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND = process.env.BACKEND_INTERNAL_URL || "http://backend:8080";
+// Force dynamic rendering so env vars are read at request time
+export const dynamic = "force-dynamic";
+
+// In Docker: frontend reaches backend via Docker service name.
+// In local dev: override with BACKEND_INTERNAL_URL=http://localhost:8080
+function getBackendUrl() {
+  return process.env.BACKEND_INTERNAL_URL || "http://backend:8080";
+}
 
 async function handler(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
-  const url = `${BACKEND}/${path.join("/")}${req.nextUrl.search}`;
+  const url = `${getBackendUrl()}/${path.join("/")}${req.nextUrl.search}`;
 
   const headers: Record<string, string> = {};
 
